@@ -6,9 +6,19 @@ import config
 
 def start_stream(callback):
     p = pyaudio.PyAudio()
-    frames_per_buffer = int(config.MIC_RATE / config.FPS)
-    stream = p.open(format=pyaudio.paInt16,
-                    channels=1,
+    buffer_multiplier = 1
+    frames_per_buffer = buffer_multiplier*int(config.MIC_RATE / config.FPS)
+    print(frames_per_buffer)
+    input_device_index = -1
+    for i in range(p.get_device_count()):
+        print(p.get_device_info_by_index(i)["name"])
+        if "usbtv" in p.get_device_info_by_index(i)["name"]:
+            input_device_index = i
+            break
+    if input_device_index == -1 :
+         raise IOError("usbtv device wasn't found")
+    stream = p.open(format=pyaudio.paInt16, input_device_index = input_device_index,
+                    channels=2,
                     rate=config.MIC_RATE,
                     input=True,
                     frames_per_buffer=frames_per_buffer)
@@ -16,9 +26,15 @@ def start_stream(callback):
     prev_ovf_time = time.time()
     while True:
         try:
-            y = np.fromstring(stream.read(frames_per_buffer, exception_on_overflow=False), dtype=np.int16)
+            y = np.fromstring(stream.read(frames_per_buffer), dtype=np.int16)
+            y = np.reshape(y, (frames_per_buffer, 2))
+            y = y[:, 0]
+#            y = y[:y.shape[0]/(2*buffer_multiplier)]
+#            y = np.fromstring(stream.read(frames_per_buffer, exception_on_overflow=False), dtype=np.int16)
             y = y.astype(np.float32)
-            stream.read(stream.get_read_available(), exception_on_overflow=False)
+            print("In Buffer: " + str(stream.get_read_available()))
+            stream.read(stream.get_read_available())
+#            stream.read(stream.get_read_available(), exception_on_overflow=False)
             callback(y)
         except IOError:
             overflows += 1

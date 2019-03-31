@@ -11,11 +11,23 @@ if config.DEVICE == 'esp8266':
     _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # Raspberry Pi controls the LED strip directly
 elif config.DEVICE == 'pi':
-    import neopixel
-    strip = neopixel.Adafruit_NeoPixel(config.N_PIXELS, config.LED_PIN,
-                                       config.LED_FREQ_HZ, config.LED_DMA,
-                                       config.LED_INVERT, config.BRIGHTNESS)
-    strip.begin()
+# Import the WS2801 module.
+    import Adafruit_WS2801
+    import Adafruit_GPIO.SPI as SPI
+    # The WS2801 library makes use of the BCM pin numbering scheme. See the README.md for details.
+
+    # Specify a software SPI connection for Raspberry Pi on the following pins:
+    PIXEL_CLOCK = 11
+    PIXEL_DOUT  = 10
+    strip = Adafruit_WS2801.WS2801Pixels(config.N_PIXELS, clk=PIXEL_CLOCK, do=PIXEL_DOUT)
+
+
+#    import neopixel
+#    strip = neopixel.Adafruit_NeoPixel(config.N_PIXELS, config.LED_PIN,
+#                                       config.LED_FREQ_HZ, config.LED_DMA,
+#                                       config.LED_INVERT, config.BRIGHTNESS)
+    strip.clear()
+    strip.show()
 elif config.DEVICE == 'blinkstick':
     from blinkstick import blinkstick
     import signal
@@ -95,17 +107,18 @@ def _update_pi():
     # Optional gamma correction
     p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
     # Encode 24-bit LED values in 32 bit integers
-    r = np.left_shift(p[0][:].astype(int), 8)
-    g = np.left_shift(p[1][:].astype(int), 16)
-    b = p[2][:].astype(int)
-    rgb = np.bitwise_or(np.bitwise_or(r, g), b)
+    r = p[0][:].astype(int) #np.left_shift(p[0][:].astype(int), 8)
+    g = p[1][:].astype(int) #np.left_shift(p[1][:].astype(int), 16)
+    b = p[2][:].astype(int) #p[2][:].astype(int)
     # Update the pixels
     for i in range(config.N_PIXELS):
         # Ignore pixels if they haven't changed (saves bandwidth)
-        if np.array_equal(p[:, i], _prev_pixels[:, i]):
-            continue
-        strip._led_data[i] = rgb[i]
-    _prev_pixels = np.copy(p)
+        #if np.array_equal(p[:, i], _prev_pixels[:, i]):
+        #    continue
+        #strip.set_pixel(i, Adafruit_WS2801.RGB_to_color( r[i], g[i], b[i] ))
+        strip.set_pixel_rgb(i,r[i], g[i], b[i])
+    #_prev_pixels = np.copy(p)
+    _prev_pixels = p
     strip.show()
 
 def _update_blinkstick():
