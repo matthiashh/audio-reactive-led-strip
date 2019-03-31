@@ -17,8 +17,8 @@ elif config.DEVICE == 'pi':
     # The WS2801 library makes use of the BCM pin numbering scheme. See the README.md for details.
 
     # Specify a software SPI connection for Raspberry Pi on the following pins:
-    PIXEL_CLOCK = 11
-    PIXEL_DOUT  = 10
+    PIXEL_CLOCK = 17
+    PIXEL_DOUT  = 27
     strip = Adafruit_WS2801.WS2801Pixels(config.N_PIXELS, clk=PIXEL_CLOCK, do=PIXEL_DOUT)
 
 
