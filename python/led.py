@@ -13,13 +13,17 @@ if config.DEVICE == 'esp8266':
 elif config.DEVICE == 'pi':
 # Import the WS2801 module.
     import Adafruit_WS2801
-    import Adafruit_GPIO.SPI as SPI
     # The WS2801 library makes use of the BCM pin numbering scheme. See the README.md for details.
 
     # Specify a software SPI connection for Raspberry Pi on the following pins:
-    PIXEL_CLOCK = 11
-    PIXEL_DOUT  = 10
-    strip = Adafruit_WS2801.WS2801Pixels(config.N_PIXELS, clk=PIXEL_CLOCK, do=PIXEL_DOUT)
+    PIXEL_CLOCK = 6
+    PIXEL_DOUT  = 5
+    strip = Adafruit_WS2801.WS2801Pixels(config.N_STARTPOINTS*config.N_PIXELS, clk=PIXEL_CLOCK, do=PIXEL_DOUT)
+
+#    import Adafruit_GPIO.SPI as SPI
+#    SPI_PORT   = 0
+#    SPI_DEVICE = 0
+#    strip = Adafruit_WS2801.WS2801Pixels(config.N_PIXELS, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
 
 
 #    import neopixel
@@ -116,7 +120,9 @@ def _update_pi():
         #if np.array_equal(p[:, i], _prev_pixels[:, i]):
         #    continue
         #strip.set_pixel(i, Adafruit_WS2801.RGB_to_color( r[i], g[i], b[i] ))
-        strip.set_pixel_rgb(i,r[i], g[i], b[i])
+        for j in range(config.N_STARTPOINTS):
+            strip.set_pixel_rgb(i+j*config.N_PIXELS,r[i], g[i], b[i])
+
     #_prev_pixels = np.copy(p)
     _prev_pixels = p
     strip.show()

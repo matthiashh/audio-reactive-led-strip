@@ -48,6 +48,10 @@ USE_GUI = False
 DISPLAY_FPS = True
 """Whether to display the FPS when running (can reduce performance)"""
 
+N_STARTPOINTS = 2
+""" Number of start/center points on the strip. Values of 1 and 2 are supported.
+This can be used to have one long strip that e.g. is mounted behind two speakers."""
+
 N_PIXELS = 62
 """Number of pixels in the LED strip (must match ESP8266 firmware)"""
 
@@ -104,5 +108,5 @@ There is no point using more bins than there are pixels on the LED strip.
 N_ROLLING_HISTORY = 1
 """Number of past audio frames to include in the rolling window"""
 
-MIN_VOLUME_THRESHOLD = 6e-2
+MIN_VOLUME_THRESHOLD = 2e-2
 """No music visualization displayed if recorded audio volume below threshold"""
