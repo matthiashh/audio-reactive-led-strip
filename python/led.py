@@ -16,15 +16,15 @@ elif config.DEVICE == 'pi':
     # The WS2801 library makes use of the BCM pin numbering scheme. See the README.md for details.
 
     # Specify a software SPI connection for Raspberry Pi on the following pins:
-    PIXEL_CLOCK = 6
-    PIXEL_DOUT  = 5
+    PIXEL_CLOCK = 11 #6
+    PIXEL_DOUT  = 10 #5
     strip = Adafruit_WS2801.WS2801Pixels(config.N_STARTPOINTS*config.N_PIXELS, clk=PIXEL_CLOCK, do=PIXEL_DOUT)
 
-#    import Adafruit_GPIO.SPI as SPI
-#    SPI_PORT   = 0
-#    SPI_DEVICE = 0
-#    strip = Adafruit_WS2801.WS2801Pixels(config.N_PIXELS, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
-
+    #import Adafruit_GPIO.SPI as SPI
+    #SPI_PORT   = 0
+    #SPI_DEVICE = 0
+    #strip = Adafruit_WS2801.WS2801Pixels(config.N_STARTPOINTS*config.N_PIXELS, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
+    #strip._spi.set_clock_hz(1953000)
 
 #    import neopixel
 #    strip = neopixel.Adafruit_NeoPixel(config.N_PIXELS, config.LED_PIN,
@@ -50,10 +50,12 @@ elif config.DEVICE == 'blinkstick':
 _gamma = np.load(config.GAMMA_TABLE_PATH)
 """Gamma lookup table used for nonlinear brightness correction"""
 
-_prev_pixels = np.tile(253, (3, config.N_PIXELS))
+_prev_pixels_l = np.tile(253, (3, config.N_PIXELS))
+_prev_pixels_r = np.tile(253, (3, config.N_PIXELS))
 """Pixel values that were most recently displayed on the LED strip"""
 
-pixels = np.tile(1, (3, config.N_PIXELS))
+pixels_l = np.tile(1, (3, config.N_PIXELS))
+pixels_r = np.tile(1, (3, config.N_PIXELS))
 """Pixel values for the LED strip"""
 
 _is_python_2 = int(platform.python_version_tuple()[0]) == 2
@@ -105,26 +107,39 @@ def _update_pi():
     Raspberry Pi uses the rpi_ws281x to control the LED strip directly.
     This function updates the LED strip with new values.
     """
-    global pixels, _prev_pixels
+    global pixels_l, pixels_r, _prev_pixels_l, _prev_pixels_r
     # Truncate values and cast to integer
-    pixels = np.clip(pixels, 0, 255).astype(int)
+    pixels_l = np.clip(pixels_l, 0, 255).astype(int)
+    pixels_r = np.clip(pixels_r, 0, 255).astype(int)
     # Optional gamma correction
-    p = _gamma[pixels] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels)
+    p_l = _gamma[pixels_l] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels_l)
+    p_l = np.asarray(p_l, dtype=np.int16)
+    p_r = _gamma[pixels_r] if config.SOFTWARE_GAMMA_CORRECTION else np.copy(pixels_r)
     # Encode 24-bit LED values in 32 bit integers
-    r = p[0][:].astype(int) #np.left_shift(p[0][:].astype(int), 8)
-    g = p[1][:].astype(int) #np.left_shift(p[1][:].astype(int), 16)
-    b = p[2][:].astype(int) #p[2][:].astype(int)
+    r_l = p_l[0][:].tolist() #np.left_shift(p[0][:].astype(int), 8)
+    #g_l = p_l[1][:].astype(int) #np.left_shift(p[1][:].astype(int), 16)
+    g_l = p_l[1][:].tolist() #np.left_shift(p[1][:].astype(int), 16)
+    b_l = p_l[2][:].tolist() #p[2][:].astype(int)
+    r_r = p_r[0][:].tolist() #np.left_shift(p[0][:].astype(int), 8)
+    g_r = p_r[1][:].tolist() #np.left_shift(p[1][:].astype(int), 16)
+    b_r = p_r[2][:].tolist() #p[2][:].astype(int)
+    #print(r_l[:config.N_PIXELS])
+    #print(r_r[:config.N_PIXELS])
     # Update the pixels
     for i in range(config.N_PIXELS):
         # Ignore pixels if they haven't changed (saves bandwidth)
         #if np.array_equal(p[:, i], _prev_pixels[:, i]):
         #    continue
         #strip.set_pixel(i, Adafruit_WS2801.RGB_to_color( r[i], g[i], b[i] ))
-        for j in range(config.N_STARTPOINTS):
-            strip.set_pixel_rgb(i+j*config.N_PIXELS,r[i], g[i], b[i])
+        strip.set_pixel_rgb(i,r_l[i], g_l[i], b_l[i]) 
+    for i in range(config.N_PIXELS):
+        strip.set_pixel_rgb(config.N_PIXELS+i,r_r[i], g_r[i], b_r[i])
 
     #_prev_pixels = np.copy(p)
-    _prev_pixels = p
+    _prev_pixels_l = np.copy(p_l)
+    _prev_pixels_r = np.copy(p_r)
+    #print(type(strip._pixels[0]))
+#    print("Pixels: " + str(strip._pixels))
     strip.show()
 
 def _update_blinkstick():
