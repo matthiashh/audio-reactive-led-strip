@@ -16,14 +16,15 @@ elif config.DEVICE == 'pi':
     # The WS2801 library makes use of the BCM pin numbering scheme. See the README.md for details.
 
     # Specify a software SPI connection for Raspberry Pi on the following pins:
-    PIXEL_CLOCK = 11 #6
-    PIXEL_DOUT  = 10 #5
-    strip = Adafruit_WS2801.WS2801Pixels(config.N_STARTPOINTS*config.N_PIXELS, clk=PIXEL_CLOCK, do=PIXEL_DOUT)
+    #PIXEL_CLOCK = 11 #6
+    #PIXEL_DOUT  = 10 #5
+    #strip = Adafruit_WS2801.WS2801Pixels(config.N_STARTPOINTS*config.N_PIXELS, clk=PIXEL_CLOCK, do=PIXEL_DOUT)
 
-    #import Adafruit_GPIO.SPI as SPI
-    #SPI_PORT   = 0
-    #SPI_DEVICE = 0
-    #strip = Adafruit_WS2801.WS2801Pixels(config.N_STARTPOINTS*config.N_PIXELS, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
+    import Adafruit_GPIO.SPI as SPI
+    SPI_PORT   = 0
+    SPI_DEVICE = 0
+    # Two extra pixels that bridge between the left and the right speaker. Other stabilize the signal and should be skipped.
+    strip = Adafruit_WS2801.WS2801Pixels(config.N_STARTPOINTS*config.N_PIXELS+2, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
     #strip._spi.set_clock_hz(1953000)
 
 #    import neopixel
@@ -131,9 +132,10 @@ def _update_pi():
         #if np.array_equal(p[:, i], _prev_pixels[:, i]):
         #    continue
         #strip.set_pixel(i, Adafruit_WS2801.RGB_to_color( r[i], g[i], b[i] ))
-        strip.set_pixel_rgb(i,r_l[i], g_l[i], b_l[i]) 
+        strip.set_pixel_rgb(i,int(r_l[i]), int(g_l[i]), int(b_l[i])) 
     for i in range(config.N_PIXELS):
-        strip.set_pixel_rgb(config.N_PIXELS+i,r_r[i], g_r[i], b_r[i])
+        # There are two extra pixels that bridge between the speakers to stabilize the signal. They flicker otherwise.
+        strip.set_pixel_rgb(config.N_PIXELS+i+2,int(r_r[i]), int(g_r[i]), int(b_r[i]))
 
     #_prev_pixels = np.copy(p)
     _prev_pixels_l = np.copy(p_l)
